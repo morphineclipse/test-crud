@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: crud-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: crud
+      POSTGRES_PASSWORD: crud
+      POSTGRES_DB: crud
+    volumes:
+      - crud-pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crud"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: crud-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://crud:crud@db:5432/crud
+      JWT_SECRET: dev-secret-change-me
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "3015:3000"
+
+volumes:
+  crud-pgdata:
